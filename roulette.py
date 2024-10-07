@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 from typing import List, Dict, Tuple
+from collections import defaultdict
 
 class SixainGame:
     def __init__(self, sixain: int, base_mise: float, douzaine: int, colonne: int):
@@ -12,6 +13,7 @@ class SixainGame:
         self.mises_globales = 0
         self.mises_totales = 0
         self.last_bet = 0
+        self.active = True
 
     def next_coup(self):
         if self.coup < 9:
@@ -198,7 +200,10 @@ class RouletteGUI:
                 self.update_info(f"Nouveau sixain à jouer : S{missing_sixain}")
         
         total_mise = 0
+        global_bets = defaultdict(float)
         for sixain, game in self.games.items():
+            if not game.active:
+                continue
             bet = game.calculate_bet()
             game_mise = bet * 3
             
@@ -207,7 +212,16 @@ class RouletteGUI:
             game.update_mises(game_mise)
             total_mise += game_mise
             
+            global_bets[f'S{sixain}'] += bet
+            global_bets[f'D{self.get_douzaine_from_sixain(sixain)}'] += bet
+            global_bets[f'C{self.get_colonne_from_sixain(sixain)}'] += bet
+            
             self.update_info(f"2- Mises globales pour S{sixain} = {self.arrondir(game.mises_globales)}€ | Mises totales = {self.arrondir(game.mises_totales)}€")
+        
+        if len(self.games) > 1:
+            self.update_info("Mises globales tous sixains confondus:")
+            for bet_type, amount in global_bets.items():
+                self.update_info(f"  {bet_type}: {self.arrondir(amount)}€")
         
         self.capital -= total_mise
         self.update_info(f"3- Capital après mises : {self.arrondir(self.capital)}€")
@@ -219,6 +233,8 @@ class RouletteGUI:
         total_gain = 0
         self.update_info(f"4- Numéro sorti : {number}")
         for sixain, game in self.games.items():
+            if not game.active:
+                continue
             sixain_win = sixain == self.get_sixain(number)
             douzaine_win = self.get_douzaine_from_sixain(sixain) == self.get_douzaine(number)
             colonne_win = self.get_colonne_from_sixain(sixain) == self.get_colonne(number)
@@ -235,8 +251,13 @@ class RouletteGUI:
             capital_initial = float(self.capital_entry.get())
             if self.capital + total_gain > capital_initial:
                 game.reset_coup()
+                game.active = False
+                self.update_info(f"S{sixain} a atteint un bénéfice. En attente d'être de nouveau orphelin.")
+            elif gain > 0:
+                self.update_info(f"S{sixain} reste au coup {game.coup}")
             else:
                 game.next_coup()
+                self.update_info(f"S{sixain} passe au coup {game.coup}")
 
         self.capital += total_gain
         self.update_info(f"6- Gains globaux : {self.arrondir(total_gain)}€")

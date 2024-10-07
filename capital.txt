@@ -1,16 +1,19 @@
 Capital : 58.4€
 Sixain 6: Mises globales = 0.6€ | Mises totales = 0.6€
-Capital : 58.4€
+Capital : 57.8€
 Sixain 6: Mises globales = 0.6€ | Mises totales = 1.2€
-Capital : 57.2€
+Capital : 56.6€
 Sixain 6: Mises globales = 0.6€ | Mises totales = 1.8€
 Sixain 1: Mises globales = 0.6€ | Mises totales = 0.6€
-Capital : 57.8€
-Sixain 6: Mises globales = 1.2€ | Mises totales = 3.0€
+Capital : 56.0€
+Sixain 6: Mises globales = 0.6€ | Mises totales = 2.4€
 Sixain 1: Mises globales = 0.6€ | Mises totales = 1.2€
 Capital : 55.4€
-Sixain 6: Mises globales = 1.8€ | Mises totales = 4.8€
+Sixain 6: Mises globales = 0.6€ | Mises totales = 3.0€
 Sixain 1: Mises globales = 0.6€ | Mises totales = 1.8€
-Capital : 61.4€
-Sixain 6: Mises globales = 0.6€ | Mises totales = 5.4€
-Sixain 1: Mises globales = 0.6€ | Mises totales = 2.4€
+Capital : 54.8€
+Sixain 6: Mises globales = 0.6€ | Mises totales = 3.6€
+Sixain 1: Mises globales = 1.2€ | Mises totales = 3.0€
+Capital : 57.2€
+Sixain 6: Mises globales = 0.6€ | Mises totales = 4.2€
+Sixain 1: Mises globales = 1.2€ | Mises totales = 4.2€
