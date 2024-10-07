@@ -123,11 +123,13 @@ class RouletteGUI:
                                 width=btn_width, height=btn_height)  # Applique la taille des boutons
                 btn.grid(row=row, column=col, sticky="nsew", padx=1, pady=1)
 
-        # Create 0 button
+        # Create 0 and 00 button
         zero_frame = tk.Frame(table, bg="green")
         zero_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
         tk.Button(zero_frame, text="0", bg="green", fg="white", width=btn_width, 
                   command=lambda: self.enter_number(0)).pack(expand=True, fill="both")
+        tk.Button(zero_frame, text="00", bg="green", fg="white", width=btn_width, 
+                  command=lambda: self.enter_number(37)).pack(expand=True, fill="both")
 
         # Create bottom bets
         bottom_frame = tk.Frame(table, bg="green")
@@ -175,9 +177,10 @@ class RouletteGUI:
         self.save_history_to_file()
         
         sixain = self.get_sixain(number)
-        douzaine = self.get_douzaine_from_sixain(sixain)
+        douzaine = self.get_douzaine(number)
         colonne = self.get_colonne(number)
         
+        self.update_info(f"\n0- Capital avant mises : {self.arrondir(self.capital)}€")
         self.update_info(f"Numéro sorti : {number} | Sixain : S{sixain} | Douzaine : D{douzaine} | Colonne : C{colonne}")
 
         if len(self.history) < 10:
@@ -191,49 +194,53 @@ class RouletteGUI:
         missing_sixains = self.detect_missing_sixains()
         for missing_sixain in missing_sixains:
             if missing_sixain not in self.games:
-                # Passer douzaine et colonne à SixainGame
-                self.games[missing_sixain] = SixainGame(missing_sixain, self.base_mise, self.get_douzaine_from_sixain(missing_sixain), self.get_colonne(missing_sixain))
+                self.games[missing_sixain] = SixainGame(missing_sixain, self.base_mise, self.get_douzaine_from_sixain(missing_sixain), self.get_colonne_from_sixain(missing_sixain))
                 self.update_info(f"Nouveau sixain à jouer : S{missing_sixain}")
         
+        total_mise = 0
         for sixain, game in self.games.items():
             bet = game.calculate_bet()
-            total_mise = bet * 3
+            game_mise = bet * 3
             
-            self.update_info(f"\n==> Coup n°{game.coup} - Mise à jouer : {self.arrondir(total_mise)} pièces sur S{sixain}, D{self.get_douzaine_from_sixain(sixain)}, C{self.get_colonne(number)}")
+            self.update_info(f"1- Coup n°{game.coup} - Mise à jouer : {self.arrondir(game_mise)} pièces sur S{sixain}, D{self.get_douzaine_from_sixain(sixain)}, C{self.get_colonne_from_sixain(sixain)}")
             
-            game.update_mises(total_mise)
-            self.capital -= total_mise
+            game.update_mises(game_mise)
+            total_mise += game_mise
             
-            self.update_info(f"Mises globales pour S{sixain} = {self.arrondir(game.mises_globales)}€ | Mises totales = {self.arrondir(game.mises_totales)}€")
+            self.update_info(f"2- Mises globales pour S{sixain} = {self.arrondir(game.mises_globales)}€ | Mises totales = {self.arrondir(game.mises_totales)}€")
         
-        self.update_info(f"Capital actuel : {self.arrondir(self.capital)}€")
+        self.capital -= total_mise
+        self.update_info(f"3- Capital après mises : {self.arrondir(self.capital)}€")
         self.save_game_data()
         
         self.waiting_for_result = True
 
     def process_result(self, number):
         total_gain = 0
+        self.update_info(f"4- Numéro sorti : {number}")
         for sixain, game in self.games.items():
-            gain = self.calculate_gain(sixain == self.get_sixain(number), 
-                                    self.get_douzaine_from_sixain(sixain) == self.get_douzaine_from_sixain(self.get_sixain(number)), 
-                                    self.get_colonne(number) == self.get_colonne(number), 
-                                    game.last_bet / 3)
+            sixain_win = sixain == self.get_sixain(number)
+            douzaine_win = self.get_douzaine_from_sixain(sixain) == self.get_douzaine(number)
+            colonne_win = self.get_colonne_from_sixain(sixain) == self.get_colonne(number)
             
+            gain_sixain = self.calculate_gain(sixain_win, False, False, game.last_bet / 3)
+            gain_douzaine = self.calculate_gain(False, douzaine_win, False, game.last_bet / 3)
+            gain_colonne = self.calculate_gain(False, False, colonne_win, game.last_bet / 3)
+            
+            self.update_info(f"5- Gains pour S{sixain}: S: {self.arrondir(gain_sixain)}€, D: {self.arrondir(gain_douzaine)}€, C: {self.arrondir(gain_colonne)}€")
+            
+            gain = gain_sixain + gain_douzaine + gain_colonne
             total_gain += gain
             
-            if gain > 0:
-                self.update_info(f"Gain pour S{sixain}: {self.arrondir(gain)}€")
-                capital_initial = float(self.capital_entry.get())  # Récupère et convertit la valeur de l'Entry
-                if self.capital + total_gain > capital_initial:  # Si le gain permet un bénéfice
-                    game.reset_coup()  # Réinitialiser le coup si bénéfice
-                else:
-                    game.next_coup()  # Sinon continuer la progression du coup
+            capital_initial = float(self.capital_entry.get())
+            if self.capital + total_gain > capital_initial:
+                game.reset_coup()
             else:
-                self.update_info(f"Perte pour S{sixain}: {self.arrondir(game.last_bet)}€")
                 game.next_coup()
 
         self.capital += total_gain
-        self.update_info(f"Gain total : {self.arrondir(total_gain)}€")
+        self.update_info(f"6- Gains globaux : {self.arrondir(total_gain)}€")
+        self.update_info(f"0- Capital avant mises : {self.arrondir(self.capital)}€")
 
     def update_info(self, message):
         self.info_text.insert(tk.END, message + "\n")
@@ -241,15 +248,31 @@ class RouletteGUI:
 
     @staticmethod
     def get_sixain(number: int) -> int:
+        if number == 0 or number == 37:  # 37 represents 00
+            return None
         return (number - 1) // 6 + 1 if 1 <= number <= 36 else None
 
     @staticmethod
-    def get_douzaine_from_sixain(sixain: int) -> int:
-        return (sixain - 1) // 2 + 1 if 1 <= sixain <= 6 else None
+    def get_douzaine(number: int) -> int:
+        if number == 0 or number == 37:  # 37 represents 00
+            return None
+        return (number - 1) // 12 + 1 if 1 <= number <= 36 else None
 
     @staticmethod
     def get_colonne(number: int) -> int:
+        if number == 0 or number == 37:  # 37 represents 00
+            return None
         return (number - 1) % 3 + 1 if 1 <= number <= 36 else None
+
+    @staticmethod
+    def get_douzaine_from_sixain(sixain: int) -> int:
+        return (sixain - 1) // 2 + 1 if sixain is not None and 1 <= sixain <= 6 else None
+
+    @staticmethod
+    def get_colonne_from_sixain(sixain: int) -> int:
+        if sixain is None or sixain < 1 or sixain > 6:
+            return None
+        return [2, 1, 3, 2, 1, 3][sixain - 1]
 
     @staticmethod
     def calculate_gain(sixain_win: bool, douzaine_win: bool, colonne_win: bool, mise: float) -> float:
