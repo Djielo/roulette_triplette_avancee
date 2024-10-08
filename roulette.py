@@ -183,7 +183,7 @@ class RouletteGUI:
         colonne = self.get_colonne(number)
         
         self.update_info(f"\n0- Capital avant mises : {self.arrondir(self.capital)}€")
-        self.update_info(f"Numéro sorti : {number} | Sixain : S{sixain} | Douzaine : D{douzaine} | Colonne : C{colonne}")
+        self.update_info(f"4- Numéro sorti : {number} | S: {sixain} | D: {douzaine} | C: {colonne}")
 
         if len(self.history) < 10:
             self.update_info(f"Attente de {10 - len(self.history)} numéro(s) supplémentaire(s) avant de commencer à jouer.")
@@ -218,10 +218,9 @@ class RouletteGUI:
             
             self.update_info(f"2- Mises globales pour S{sixain} = {self.arrondir(game.mises_globales)}€ | Mises totales = {self.arrondir(game.mises_totales)}€")
         
-        if len(self.games) > 1:
-            self.update_info("Mises globales tous sixains confondus:")
-            for bet_type, amount in global_bets.items():
-                self.update_info(f"  {bet_type}: {self.arrondir(amount)}€")
+        self.update_info("Mises globales tous sixains confondus:")
+        for bet_type, amount in global_bets.items():
+            self.update_info(f"  {bet_type}: {self.arrondir(amount)}€")
         
         self.capital -= total_mise
         self.update_info(f"3- Capital après mises : {self.arrondir(self.capital)}€")
@@ -231,7 +230,6 @@ class RouletteGUI:
 
     def process_result(self, number):
         total_gain = 0
-        self.update_info(f"4- Numéro sorti : {number}")
         for sixain, game in self.games.items():
             if not game.active:
                 continue
@@ -325,7 +323,7 @@ class RouletteGUI:
 
 def main():
     root = tk.Tk()
-    root.geometry("1000x600")  # Set initial window size
+    root.geometry("1300x600")  # Set initial window size
     gui = RouletteGUI(root)
     root.mainloop()
 
