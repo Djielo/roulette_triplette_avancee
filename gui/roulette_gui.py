@@ -13,27 +13,21 @@ class RouletteGUI:
     def setup_gui(self):
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_rowconfigure(1, weight=1)
+        self.master.grid_rowconfigure(2, weight=2)  # Nouvelle ligne pour la zone de texte
 
         # Top frame for input fields and start button
         top_frame = tk.Frame(self.master)
         top_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         self.create_input_fields(top_frame)
 
-        # Main frame for roulette table and info text
-        main_frame = tk.Frame(self.master)
-        main_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-        main_frame.grid_columnconfigure(0, weight=3)
-        main_frame.grid_columnconfigure(1, weight=1)
-        main_frame.grid_rowconfigure(0, weight=1)
-
-        # Left frame for roulette table
-        self.table_frame = tk.Frame(main_frame)
-        self.table_frame.grid(row=0, column=0, sticky="nsew")
+        # Frame for roulette table
+        self.table_frame = tk.Frame(self.master)
+        self.table_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         create_roulette_table(self.table_frame, self.enter_number)
 
-        # Right frame for info text
-        info_frame = tk.Frame(main_frame)
-        info_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        # Frame for info text
+        info_frame = tk.Frame(self.master)
+        info_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
         self.create_info_text(info_frame)
 
     def create_input_fields(self, parent):
