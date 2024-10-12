@@ -8,6 +8,7 @@ class GameLogic:
         self.base_mise = 0
         self.history = []
         self.active_game = None
+        self.previous_capital = 0  # Capital après la sortie précédente
 
     def initialize_game(self, capital, base_mise):
         self.capital = capital
@@ -38,6 +39,7 @@ class GameLogic:
             missing_sixain = self.detect_missing_sixain()
             if missing_sixain:
                 self.active_game = SixainGame(missing_sixain, self.base_mise)
+                self.previous_capital = self.capital  # Initialisation du capital précédent
                 info += f"Nouveau sixain à jouer : S{missing_sixain}\n"
         
         if self.active_game:
@@ -52,6 +54,45 @@ class GameLogic:
             if sixain not in last_10_sixains:
                 return sixain
         return None
+
+    def process_result(self, number):
+        if not self.active_game:
+            return "Aucun jeu actif.\n"
+        
+        sixain_win = self.active_game.sixain == get_sixain(number)
+        douzaine_win = self.active_game.douzaine == get_douzaine(number)
+        colonne_win = self.active_game.colonne == get_colonne(number)
+        
+        gain_sixain = calculate_gain(sixain_win, False, False, self.active_game.last_bet)
+        gain_douzaine = calculate_gain(False, douzaine_win, False, self.active_game.last_bet)
+        gain_colonne = calculate_gain(False, False, colonne_win, self.active_game.last_bet)
+        
+        total_gain = gain_sixain + gain_douzaine + gain_colonne
+        new_capital = self.capital + total_gain
+        
+        info = f"Gains : S: {arrondir(gain_sixain)}€, D: {arrondir(gain_douzaine)}€, C: {arrondir(gain_colonne)}€\n" \
+               f"Gain total : {arrondir(total_gain)}€\n" \
+               f"Nouveau capital : {arrondir(new_capital)}€\n"
+        
+        if new_capital < self.previous_capital:
+            self.active_game.next_coup()
+            info += f"Nouveau capital inférieur. Passage au coup {self.active_game.current_coup}.\n"
+        elif new_capital == self.previous_capital:
+            info += f"Nouveau capital égal. On reste au coup {self.active_game.current_coup}.\n"
+        elif new_capital > self.previous_capital and new_capital < self.initial_capital:
+            if self.active_game.current_coup > 1:
+                self.active_game.previous_coup()
+                info += f"Nouveau capital supérieur mais inférieur au capital de départ. Retour au coup {self.active_game.current_coup}.\n"
+            else:
+                info += f"Déjà au premier coup. On reste au coup {self.active_game.current_coup}.\n"
+        else:  # new_capital > self.previous_capital and new_capital >= self.initial_capital
+            self.active_game = None
+            info += "Bénéfice réalisé. Fin du jeu sur ce sixain.\n"
+        
+        self.capital = new_capital
+        self.previous_capital = new_capital
+        
+        return info
 
     def place_bets(self):
         if self.active_game is None:
@@ -74,35 +115,4 @@ class GameLogic:
         
         return f"Mise placée : {arrondir(total_mise)}€ sur S{self.active_game.sixain}, D{self.active_game.douzaine}, C{self.active_game.colonne}\n" \
                f"Capital après mise : {arrondir(self.capital)}€\n" \
-               f"Coup actuel : {self.active_game.current_coup}\n"
-
-    def process_result(self, number):
-        if not self.active_game:
-            return "Aucun jeu actif.\n"
-        
-        sixain_win = self.active_game.sixain == get_sixain(number)
-        douzaine_win = self.active_game.douzaine == get_douzaine(number)
-        colonne_win = self.active_game.colonne == get_colonne(number)
-        
-        gain_sixain = calculate_gain(sixain_win, False, False, self.active_game.last_bet)
-        gain_douzaine = calculate_gain(False, douzaine_win, False, self.active_game.last_bet)
-        gain_colonne = calculate_gain(False, False, colonne_win, self.active_game.last_bet)
-        
-        total_gain = gain_sixain + gain_douzaine + gain_colonne
-        self.capital += total_gain
-        
-        info = f"Gains : S: {arrondir(gain_sixain)}€, D: {arrondir(gain_douzaine)}€, C: {arrondir(gain_colonne)}€\n" \
-               f"Gain total : {arrondir(total_gain)}€\n" \
-               f"Nouveau capital : {arrondir(self.capital)}€\n"
-        
-        if total_gain == 0:
-            self.active_game.next_coup()
-            info += f"Aucun gain. Passage au coup {self.active_game.current_coup}.\n"
-        elif self.capital > self.initial_capital:
-            self.active_game = None
-            info += "Bénéfice réalisé. Fin du jeu sur ce sixain.\n"
-        else:
-            # Gain partiel mais pas de bénéfice, on reste sur le coup en cours
-            info += f"Gain partiel. On reste au coup {self.active_game.current_coup}.\n"
-        
-        return info
+               f"Coup actuel : {self.active_game.current_coup} (Multiplicateur : x{self.active_game.bet_progression[self.active_game.current_coup - 1]})\n"
