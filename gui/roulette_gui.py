@@ -13,16 +13,21 @@ class RouletteGUI:
     def setup_gui(self):
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_rowconfigure(1, weight=1)
-        self.master.grid_rowconfigure(2, weight=2)  # Nouvelle ligne pour la zone de texte
+        self.master.grid_rowconfigure(2, weight=2)
 
-        # Top frame for input fields and start button
+        # Top frame for input fields and buttons
         top_frame = tk.Frame(self.master)
         top_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         self.create_input_fields(top_frame)
 
-        # Frame for roulette table
-        self.table_frame = tk.Frame(self.master)
-        self.table_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        # Frame for roulette table (centered)
+        table_container = tk.Frame(self.master)
+        table_container.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        table_container.grid_columnconfigure(0, weight=1)
+        table_container.grid_columnconfigure(2, weight=1)
+        
+        self.table_frame = tk.Frame(table_container)
+        self.table_frame.grid(row=0, column=1)
         create_roulette_table(self.table_frame, self.enter_number)
 
         # Frame for info text
@@ -42,7 +47,8 @@ class RouletteGUI:
         self.base_mise_entry = tk.Entry(parent)
         self.base_mise_entry.grid(row=0, column=3, sticky="ew")
 
-        tk.Button(parent, text="Commencer", command=self.start_game).grid(row=0, column=4, padx=(10, 0))
+        tk.Button(parent, text="Commencer", command=self.start_game).grid(row=0, column=4, padx=(10, 5))
+        tk.Button(parent, text="Réinitialiser", command=self.reset_game).grid(row=0, column=5, padx=(5, 0))
 
     def create_info_text(self, parent):
         parent.grid_rowconfigure(0, weight=1)
@@ -65,6 +71,15 @@ class RouletteGUI:
             self.base_mise_entry.config(state='disabled')
         except ValueError:
             messagebox.showerror("Erreur", "Veuillez entrer des valeurs numériques valides.")
+
+    def reset_game(self):
+        self.game_logic.reset_game()
+        self.capital_entry.config(state='normal')
+        self.base_mise_entry.config(state='normal')
+        self.capital_entry.delete(0, tk.END)
+        self.base_mise_entry.delete(0, tk.END)
+        self.info_text.delete('1.0', tk.END)
+        self.update_info("Jeu réinitialisé. Veuillez entrer de nouvelles valeurs et commencer un nouveau jeu.")
 
     def enter_number(self, number):
         if not self.game_logic.is_initialized():

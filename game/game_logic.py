@@ -9,6 +9,7 @@ class GameLogic:
         self.history = []
         self.active_game = None
         self.previous_capital = 0  # Capital après la sortie précédente
+        self.initialized = False
 
     def initialize_game(self, capital, base_mise):
         self.capital = capital
@@ -16,11 +17,19 @@ class GameLogic:
         self.base_mise = base_mise
         self.history = []
         self.active_game = None
+        self.previous_capital = 0
+        self.initialized = True
+
+    def reset_game(self):
+        self.__init__()
 
     def is_initialized(self):
-        return self.capital > 0 and self.base_mise > 0
+        return self.initialized
 
     def process_number(self, number):
+        if not self.initialized:
+            return "Le jeu n'a pas encore été initialisé."
+
         self.history.append(number)
         sixain = get_sixain(number)
         douzaine = get_douzaine(number)
