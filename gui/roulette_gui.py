@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
-from game.game_logic import GameLogic
+from game.multi_sixain_game_logic import MultiSixainGameLogic
 from gui.table_layout import create_roulette_table
 
 class RouletteGUI:
     def __init__(self, master):
         self.master = master
         master.title("Roulette Game")
-        self.game_logic = GameLogic()
+        self.game_logic = MultiSixainGameLogic()
         self.setup_gui()
 
     def setup_gui(self):
