@@ -26,37 +26,39 @@ class MultiSixainGameLogic:
         self.last_ten_sixains = deque(maxlen=10)
 
     def process_number(self, number):
-        if not self.initialized:
-            return "Le jeu n'a pas encore été initialisé."
+      if not self.initialized:
+          return "Le jeu n'a pas encore été initialisé."
 
-        self.history.append(number)
-        current_sixain = get_sixain(number)
-        douzaine = get_douzaine(number)
-        colonne = get_colonne(number)
-        
-        info = f"Numéro sorti : {number} | Sixain : S{current_sixain} | Douzaine : D{douzaine} | Colonne : C{colonne}\n"
-        
-        self.last_ten_sixains.append(current_sixain)
-        
-        if len(self.history) < 10:
-            return info + f"Attente de {10 - len(self.history)} numéro(s) supplémentaire(s) avant de commencer à jouer."
-        
-        self.update_orphan_sixains(current_sixain)
-        
-        for sixain in list(self.active_games.keys()):
-            result_info = self.process_result(number, sixain)
-            info += result_info
-        
-        while len(self.active_games) < self.max_active_sixains and self.orphan_sixains:
-            new_sixain = self.orphan_sixains.pop(0)
-            self.start_new_game(new_sixain)
-            info += f"Nouveau jeu démarré pour le sixain orphelin S{new_sixain}\n"
-        
-        for sixain in self.active_games:
-            bet_info = self.place_bets(sixain)
-            info += bet_info
-        
-        return info
+      self.history.append(number)
+      current_sixain = get_sixain(number)
+      douzaine = get_douzaine(number)
+      colonne = get_colonne(number)
+      
+      info = f"Numéro sorti : {number} | Sixain : S{current_sixain} | Douzaine : D{douzaine} | Colonne : C{colonne}\n"
+      
+      self.last_ten_sixains.append(current_sixain)
+      
+      if len(self.history) < 10:
+          return info + f"Attente de {10 - len(self.history)} numéro(s) supplémentaire(s) avant de commencer à jouer."
+      
+      self.update_orphan_sixains(current_sixain)
+      
+      # Utiliser une copie du dictionnaire pour l'itération
+      for sixain in list(self.active_games.keys()):
+          result_info = self.process_result(number, sixain)
+          info += result_info
+      
+      while len(self.active_games) < self.max_active_sixains and self.orphan_sixains:
+          new_sixain = self.orphan_sixains.pop(0)
+          self.start_new_game(new_sixain)
+          info += f"Nouveau jeu démarré pour le sixain orphelin S{new_sixain}\n"
+      
+      # Utiliser à nouveau une copie du dictionnaire pour l'itération
+      for sixain in list(self.active_games.keys()):
+          bet_info = self.place_bets(sixain)
+          info += bet_info
+      
+      return info
 
     def update_orphan_sixains(self, current_sixain):
         if current_sixain in self.orphan_sixains:
