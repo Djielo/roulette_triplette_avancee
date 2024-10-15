@@ -47,8 +47,14 @@ class RouletteGUI:
         self.base_mise_entry = tk.Entry(parent)
         self.base_mise_entry.grid(row=0, column=3, sticky="ew")
 
-        tk.Button(parent, text="Commencer", command=self.start_game).grid(row=0, column=4, padx=(10, 5))
-        tk.Button(parent, text="Réinitialiser", command=self.reset_game).grid(row=0, column=5, padx=(5, 0))
+        tk.Label(parent, text="Nombre max de sixains:").grid(row=0, column=4, sticky="e", padx=(10, 5))
+        self.sixain_number = tk.StringVar(parent)
+        self.sixain_number.set("1")  # valeur par défaut
+        sixain_menu = tk.OptionMenu(parent, self.sixain_number, "1", "2", "3", "4", "5", "6")
+        sixain_menu.grid(row=0, column=5, sticky="ew")
+
+        tk.Button(parent, text="Commencer", command=self.start_game).grid(row=0, column=6, padx=(10, 5))
+        tk.Button(parent, text="Réinitialiser", command=self.reset_game).grid(row=0, column=7, padx=(5, 0))
 
     def create_info_text(self, parent):
         parent.grid_rowconfigure(0, weight=1)
@@ -65,10 +71,12 @@ class RouletteGUI:
         try:
             capital = float(self.capital_entry.get())
             base_mise = float(self.base_mise_entry.get())
-            self.game_logic.initialize_game(capital, base_mise)
-            self.update_info("Jeu commencé")
+            max_active_sixains = int(self.sixain_number.get())
+            self.game_logic.initialize_game(capital, base_mise, max_active_sixains)
+            self.update_info(f"Jeu commencé avec un maximum de {max_active_sixains} sixain(s) actif(s)")
             self.capital_entry.config(state='disabled')
             self.base_mise_entry.config(state='disabled')
+            self.sixain_number.set(str(max_active_sixains))  # Figer la sélection
         except ValueError:
             messagebox.showerror("Erreur", "Veuillez entrer des valeurs numériques valides.")
 
@@ -76,6 +84,7 @@ class RouletteGUI:
         self.game_logic.reset_game()
         self.capital_entry.config(state='normal')
         self.base_mise_entry.config(state='normal')
+        self.sixain_number.set("1")  # Réinitialiser à la valeur par défaut
         self.capital_entry.delete(0, tk.END)
         self.base_mise_entry.delete(0, tk.END)
         self.info_text.delete('1.0', tk.END)

@@ -1,3 +1,4 @@
+from collections import deque
 from game.sixain_game import SixainGame
 from utils.calculations import get_sixain, get_douzaine, get_colonne, calculate_gain, arrondir
 
@@ -7,24 +8,24 @@ class MultiSixainGameLogic:
         self.initial_capital = 0
         self.base_mise = 0
         self.history = []
-        self.active_games = {}  # Un dictionnaire pour stocker les jeux actifs pour chaque sixain
-        self.previous_capitals = {}  # Capital après la sortie précédente pour chaque sixain
-        self.initialized = False
-
-    def initialize_game(self, capital, base_mise):
-        self.capital = capital
-        self.initial_capital = capital
-        self.base_mise = base_mise
-        self.history = []
         self.active_games = {}
-        self.previous_capitals = {i: capital for i in range(1, 7)}  # Initialisation pour chaque sixain
-        self.initialized = True
+        self.previous_capitals = {}
+        self.initialized = False
+        self.max_active_sixains = 0
+        self.orphan_sixains = []
+        self.last_ten_sixains = deque(maxlen=10)
 
-    def reset_game(self):
-        self.__init__()
-
-    def is_initialized(self):
-        return self.initialized
+    def initialize_game(self, capital, base_mise, max_active_sixains):
+      self.capital = capital
+      self.initial_capital = capital
+      self.base_mise = base_mise
+      self.history = []
+      self.active_games = {}
+      self.previous_capitals = {}
+      self.initialized = True
+      self.max_active_sixains = max_active_sixains
+      self.orphan_sixains = []
+      self.last_ten_sixains = deque(maxlen=10)
 
     def process_number(self, number):
         if not self.initialized:
@@ -37,28 +38,44 @@ class MultiSixainGameLogic:
         
         info = f"Numéro sorti : {number} | Sixain : S{current_sixain} | Douzaine : D{douzaine} | Colonne : C{colonne}\n"
         
+        self.last_ten_sixains.append(current_sixain)
+        
         if len(self.history) < 10:
             return info + f"Attente de {10 - len(self.history)} numéro(s) supplémentaire(s) avant de commencer à jouer."
         
-        for sixain in range(1, 7):
-            if sixain in self.active_games:
-                result_info = self.process_result(number, sixain)
-                info += result_info
-            
-            if sixain not in self.active_games and self.should_start_game(sixain):
-                self.active_games[sixain] = SixainGame(sixain, self.base_mise)
-                self.previous_capitals[sixain] = self.capital
-                info += f"Nouveau jeu démarré pour le sixain S{sixain}\n"
-            
-            if sixain in self.active_games:
-                bet_info = self.place_bets(sixain)
-                info += bet_info
+        self.update_orphan_sixains(current_sixain)
+    
+        for sixain in list(self.active_games.keys()):
+            result_info = self.process_result(number, sixain)
+            info += result_info
+        
+        # Démarrer de nouveaux jeux pour les sixains orphelins si possible
+        while len(self.active_games) < self.max_active_sixains and self.orphan_sixains:
+            new_sixain = self.orphan_sixains.pop(0)
+            self.start_new_game(new_sixain)
+            info += f"Nouveau jeu démarré pour le sixain orphelin S{new_sixain}\n"
+        
+        for sixain in self.active_games:
+            bet_info = self.place_bets(sixain)
+            info += bet_info
         
         return info
 
-    def should_start_game(self, sixain):
-        last_10_sixains = [get_sixain(n) for n in self.history[-10:]]
-        return sixain not in last_10_sixains
+    def update_orphan_sixains(self, current_sixain):
+      # Supprimer le sixain actuel de la liste des orphelins s'il y est
+      if current_sixain in self.orphan_sixains:
+          self.orphan_sixains.remove(current_sixain)
+      
+      # Vérifier tous les sixains possibles
+      for sixain in range(1, 7):
+          if (sixain not in self.active_games and 
+              sixain not in self.last_ten_sixains and 
+              sixain not in self.orphan_sixains):
+              self.orphan_sixains.append(sixain)
+
+    def start_new_game(self, sixain):
+        self.active_games[sixain] = SixainGame(sixain, self.base_mise)
+        self.previous_capitals[sixain] = self.capital
 
     def process_result(self, number, sixain):
         game = self.active_games[sixain]
@@ -114,3 +131,9 @@ class MultiSixainGameLogic:
         return f"S{sixain} - Mise placée : {arrondir(total_mise)}€ sur S{game.sixain}, D{game.douzaine}, C{game.colonne}\n" \
                f"Capital après mise : {arrondir(self.capital)}€\n" \
                f"Coup actuel : {game.current_coup} (Multiplicateur : x{game.bet_progression[game.current_coup - 1]})\n"
+
+    def reset_game(self):
+        self.__init__()
+
+    def is_initialized(self):
+        return self.initialized
