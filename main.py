@@ -3,7 +3,7 @@ from gui.roulette_gui import RouletteGUI
 
 def main():
     root = tk.Tk()
-    root.geometry("650x800")
+    root.geometry("1000x800")  # Ajusté pour accommoder la nouvelle interface
     gui = RouletteGUI(root)
     root.mainloop()
 

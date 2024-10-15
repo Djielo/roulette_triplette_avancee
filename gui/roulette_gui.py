@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 from game.multi_sixain_game_logic import MultiSixainGameLogic
 from gui.table_layout import create_roulette_table
 
@@ -12,49 +12,44 @@ class RouletteGUI:
 
     def setup_gui(self):
         self.master.grid_columnconfigure(0, weight=1)
-        self.master.grid_rowconfigure(1, weight=1)
-        self.master.grid_rowconfigure(2, weight=2)
+        self.master.grid_columnconfigure(1, weight=1)
 
-        # Top frame for input fields and buttons
-        top_frame = tk.Frame(self.master)
-        top_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
-        self.create_input_fields(top_frame)
+        # Paramètres de jeu
+        self.create_game_params_frame()
 
-        # Frame for roulette table (centered)
-        table_container = tk.Frame(self.master)
-        table_container.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-        table_container.grid_columnconfigure(0, weight=1)
-        table_container.grid_columnconfigure(2, weight=1)
-        
-        self.table_frame = tk.Frame(table_container)
-        self.table_frame.grid(row=0, column=1)
+        # Visualisation des mises et gains
+        self.create_bets_gains_frame()
+
+        # Déroulement du jeu
+        self.create_game_progress_frame()
+
+        # Visualisation globale du jeu
+        self.create_global_view_frame()
+
+        # Table de roulette (conservée de l'ancienne version)
+        self.table_frame = tk.Frame(self.master)
+        self.table_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
         create_roulette_table(self.table_frame, self.enter_number)
 
-        # Frame for info text
-        info_frame = tk.Frame(self.master)
-        info_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
-        self.create_info_text(info_frame)
+    def create_game_params_frame(self):
+        frame = ttk.LabelFrame(self.master, text="Paramètres de jeu")
+        frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-    def create_input_fields(self, parent):
-        parent.grid_columnconfigure(1, weight=1)
-        parent.grid_columnconfigure(3, weight=1)
+        ttk.Label(frame, text="Capital de départ:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+        self.capital_entry = ttk.Entry(frame)
+        self.capital_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
 
-        tk.Label(parent, text="Capital de départ:").grid(row=0, column=0, sticky="e", padx=(0, 5))
-        self.capital_entry = tk.Entry(parent)
-        self.capital_entry.grid(row=0, column=1, sticky="ew")
+        ttk.Label(frame, text="Valeur d'une pièce:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+        self.base_mise_entry = ttk.Entry(frame)
+        self.base_mise_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
 
-        tk.Label(parent, text="Valeur d'une pièce:").grid(row=0, column=2, sticky="e", padx=(10, 5))
-        self.base_mise_entry = tk.Entry(parent)
-        self.base_mise_entry.grid(row=0, column=3, sticky="ew")
+        ttk.Label(frame, text="Nombre max de sixains:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
+        self.sixain_number = ttk.Combobox(frame, values=list(range(1, 7)))
+        self.sixain_number.set("1")
+        self.sixain_number.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
 
-        tk.Label(parent, text="Nombre max de sixains:").grid(row=0, column=4, sticky="e", padx=(10, 5))
-        self.sixain_number = tk.StringVar(parent)
-        self.sixain_number.set("1")  # valeur par défaut
-        sixain_menu = tk.OptionMenu(parent, self.sixain_number, "1", "2", "3", "4", "5", "6")
-        sixain_menu.grid(row=0, column=5, sticky="ew")
-
-        tk.Button(parent, text="Commencer", command=self.start_game).grid(row=0, column=6, padx=(10, 5))
-        tk.Button(parent, text="Réinitialiser", command=self.reset_game).grid(row=0, column=7, padx=(5, 0))
+        ttk.Button(frame, text="Commencer", command=self.start_game).grid(row=3, column=0, padx=5, pady=5)
+        ttk.Button(frame, text="Réinitialiser", command=self.reset_game).grid(row=3, column=1, padx=5, pady=5)
 
     def create_info_text(self, parent):
         parent.grid_rowconfigure(0, weight=1)
@@ -67,28 +62,105 @@ class RouletteGUI:
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.info_text.config(yscrollcommand=scrollbar.set)
 
+    def create_bets_gains_frame(self):
+        frame = ttk.LabelFrame(self.master, text="Visualisation des mises et gains")
+        frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        self.bets_text = tk.Text(frame, height=10, width=40)
+        self.bets_text.grid(row=0, column=0, padx=5, pady=5)
+        self.gains_text = tk.Text(frame, height=10, width=40)
+        self.gains_text.grid(row=0, column=1, padx=5, pady=5)
+
+    def create_game_progress_frame(self):
+        frame = ttk.LabelFrame(self.master, text="Déroulement du jeu")
+        frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+
+        ttk.Label(frame, text="Numéro sorti:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+        self.last_number = ttk.Label(frame, text="--")
+        self.last_number.grid(row=0, column=1, sticky="w", padx=5, pady=2)
+
+        self.balance_labels = {}
+        for i in range(6):
+            ttk.Label(frame, text=f"Balance pour sixain {i+1}:").grid(row=i+1, column=0, sticky="e", padx=5, pady=2)
+            self.balance_labels[i+1] = ttk.Label(frame, text="0.00€")
+            self.balance_labels[i+1].grid(row=i+1, column=1, sticky="w", padx=5, pady=2)
+
+        ttk.Label(frame, text="Évolution capital global:").grid(row=7, column=0, sticky="e", padx=5, pady=2)
+        self.capital_label = ttk.Label(frame, text="0.00€")
+        self.capital_label.grid(row=7, column=1, sticky="w", padx=5, pady=2)
+
+    def create_global_view_frame(self):
+        frame = ttk.LabelFrame(self.master, text="Visualisation globale du jeu")
+        frame.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+
+        self.total_bets_text = tk.Text(frame, height=10, width=40)
+        self.total_bets_text.grid(row=0, column=0, padx=5, pady=5)
+
+        self.history_canvas = tk.Canvas(frame, width=300, height=100)
+        self.history_canvas.grid(row=1, column=0, padx=5, pady=5)
+
+    def update_display(self):
+        # Mise à jour des mises et gains
+        self.bets_text.delete('1.0', tk.END)
+        self.gains_text.delete('1.0', tk.END)
+        for sixain, game in self.game_logic.active_games.items():
+            self.bets_text.insert(tk.END, f"S{sixain} - Mises : S: {game.last_bet:.2f}€, D: {game.last_bet:.2f}€, C: {game.last_bet:.2f}€\n")
+            self.gains_text.insert(tk.END, f"S{sixain} - Gains : S: {game.total_gain:.2f}€, D: {game.total_gain:.2f}€, C: {game.total_gain:.2f}€\n")
+
+        # Mise à jour du déroulement du jeu
+        if self.game_logic.history:
+            self.last_number.config(text=str(self.game_logic.history[-1]))
+        for sixain in range(1, 7):
+            if sixain in self.game_logic.active_games:
+                balance = self.game_logic.active_games[sixain].balance
+            else:
+                balance = 0
+            self.balance_labels[sixain].config(text=f"{balance:.2f}€")
+        self.capital_label.config(text=f"{self.game_logic.capital:.2f}€")
+
+        # Mise à jour de la visualisation globale
+        self.total_bets_text.delete('1.0', tk.END)
+        total_bets = self.calculate_total_bets()
+        for category, bets in total_bets.items():
+            self.total_bets_text.insert(tk.END, f"{category.capitalize()}:\n")
+            for key, value in bets.items():
+                self.total_bets_text.insert(tk.END, f"{key}: {value:.2f}€\n")
+            self.total_bets_text.insert(tk.END, "\n")
+
+        # Mise à jour de l'historique des sorties
+        self.update_history_display()
+
+    def calculate_total_bets(self):
+        total_bets = {'sixains': {}, 'douzaines': {}, 'colonnes': {}}
+        for sixain, game in self.game_logic.active_games.items():
+            total_bets['sixains'][f'S{sixain}'] = total_bets['sixains'].get(f'S{sixain}', 0) + game.last_bet
+            total_bets['douzaines'][f'D{game.douzaine}'] = total_bets['douzaines'].get(f'D{game.douzaine}', 0) + game.last_bet
+            total_bets['colonnes'][f'C{game.colonne}'] = total_bets['colonnes'].get(f'C{game.colonne}', 0) + game.last_bet
+        return total_bets
+
+    def update_history_display(self):
+        self.history_canvas.delete("all")
+        for i, number in enumerate(self.game_logic.history[-30:]):  # Affiche les 30 derniers numéros
+            x, y = (i % 10) * 30, (i // 10) * 30
+            color = "red" if number in [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36] else "black"
+            self.history_canvas.create_oval(x, y, x+20, y+20, fill=color)
+            self.history_canvas.create_text(x+10, y+10, text=str(number), fill="white")            
+
     def start_game(self):
         try:
             capital = float(self.capital_entry.get())
             base_mise = float(self.base_mise_entry.get())
             max_active_sixains = int(self.sixain_number.get())
             self.game_logic.initialize_game(capital, base_mise, max_active_sixains)
-            self.update_info(f"Jeu commencé avec un maximum de {max_active_sixains} sixain(s) actif(s)")
-            self.capital_entry.config(state='disabled')
-            self.base_mise_entry.config(state='disabled')
-            self.sixain_number.set(str(max_active_sixains))  # Figer la sélection
+            self.update_display()
+            messagebox.showinfo("Jeu commencé", f"Jeu commencé avec un maximum de {max_active_sixains} sixain(s) actif(s)")
         except ValueError:
             messagebox.showerror("Erreur", "Veuillez entrer des valeurs numériques valides.")
 
     def reset_game(self):
         self.game_logic.reset_game()
-        self.capital_entry.config(state='normal')
-        self.base_mise_entry.config(state='normal')
-        self.sixain_number.set("1")  # Réinitialiser à la valeur par défaut
-        self.capital_entry.delete(0, tk.END)
-        self.base_mise_entry.delete(0, tk.END)
-        self.info_text.delete('1.0', tk.END)
-        self.update_info("Jeu réinitialisé. Veuillez entrer de nouvelles valeurs et commencer un nouveau jeu.")
+        self.update_display()
+        messagebox.showinfo("Jeu réinitialisé", "Le jeu a été réinitialisé.")
 
     def enter_number(self, number):
         if not self.game_logic.is_initialized():
@@ -96,7 +168,8 @@ class RouletteGUI:
             return
 
         result = self.game_logic.process_number(number)
-        self.update_info(result)
+        self.update_display()
+        messagebox.showinfo("Résultat", result)
 
     def update_info(self, message):
         self.info_text.insert(tk.END, message + "\n")
