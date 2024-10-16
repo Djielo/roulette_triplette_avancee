@@ -12,6 +12,10 @@ class SixainGame:
         self.total_bet = 0
         self.total_gain = 0
         self.balance = 0
+        # Ajout des attributs pour les gains individuels
+        self.last_gain_sixain = 0
+        self.last_gain_douzaine = 0
+        self.last_gain_colonne = 0
 
     def next_coup(self):
         if self.current_coup < 9:
@@ -38,8 +42,12 @@ class SixainGame:
         self.total_bet += total_mise
         self.update_balance()
 
-    def update_gains(self, gain):
-        self.total_gain += gain
+    def update_gains(self, gain_sixain, gain_douzaine, gain_colonne):
+        self.last_gain_sixain = gain_sixain
+        self.last_gain_douzaine = gain_douzaine
+        self.last_gain_colonne = gain_colonne
+        total_gain = gain_sixain + gain_douzaine + gain_colonne
+        self.total_gain += total_gain
         self.update_balance()
 
     def update_balance(self):
