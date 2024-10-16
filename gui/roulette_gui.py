@@ -69,6 +69,8 @@ class RouletteGUI:
     def create_bets_gains_frame(self):
         frame = ttk.LabelFrame(self.master, text="VISUALISATION DES MISES ET GAINS")
         frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.columnconfigure(1, weight=1)
 
         ttk.Label(frame, text="Les mises", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=5, pady=5)
         ttk.Label(frame, text="Les gains", font=("Arial", 10, "bold")).grid(row=0, column=1, padx=5, pady=5)
@@ -81,6 +83,11 @@ class RouletteGUI:
         self.bet_labels = {}
         self.gain_labels = {}
         for i in range(6):
+            self.bets_frame.columnconfigure(0, weight=1)
+            self.bets_frame.columnconfigure(1, weight=1)
+            self.gains_frame.columnconfigure(0, weight=1)
+            self.gains_frame.columnconfigure(1, weight=1)
+
             ttk.Label(self.bets_frame, text=f"S{i+1} - Mises:").grid(row=i, column=0, sticky="e", padx=5, pady=2)
             self.bet_labels[i+1] = ttk.Label(self.bets_frame, text="S: 0.00€, D: 0.00€, C: 0.00€")
             self.bet_labels[i+1].grid(row=i, column=1, sticky="w", padx=5, pady=2)
@@ -211,13 +218,13 @@ class RouletteGUI:
         # Mise à jour de l'historique des sorties
         self.update_history_display()
 
-        # Mise à jour des coups par sixain
+        # Mise à jour et mise en surbrillance des coups par sixain
         for sixain in range(1, 7):
             if sixain in self.game_logic.active_games:
                 game = self.game_logic.active_games[sixain]
-                self.coup_labels[f'S{sixain}:'].config(text=f"{game.current_coup}")
+                self.coup_labels[f'S{sixain}:'].config(text=f"{game.current_coup}", bg='light yellow')
             else:
-                self.coup_labels[f'S{sixain}:'].config(text="-")
+                self.coup_labels[f'S{sixain}:'].config(text="-", bg='SystemButtonFace')
 
     def calculate_total_bets(self):
         total_bets = {
@@ -271,6 +278,10 @@ class RouletteGUI:
         # Réinitialisation des mises cumulées
         for label in self.mises_labels.values():
             label.config(text="0.00€", bg='SystemButtonFace')
+
+        # Réinitialisation des coups par sixain
+        for label in self.coup_labels.values():
+            label.config(text="-", bg='SystemButtonFace')            
         
         self.history_canvas.delete("all")
         if self.show_popup.get():
