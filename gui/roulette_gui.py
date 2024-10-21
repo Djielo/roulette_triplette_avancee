@@ -10,7 +10,11 @@ class RouletteGUI:
         self.game_logic = MultiSixainGameLogic()
         self.show_popup = tk.BooleanVar(value=True)
         self.coup_labels = {}  # Ajout de ce dictionnaire pour stocker les labels des coups
-        self.setup_gui()        
+        self.remaining_time = 0  # Initialisation du temps restant pour le compte à rebours
+        self.timer_running = False  # Statut pour savoir si le compte à rebours est actif
+        self.minutes = 0  # Minutes sélectionnées
+        self.seconds = 0  # Secondes sélectionnées
+        self.setup_gui()
 
     def setup_gui(self):
         self.master.grid_columnconfigure(0, weight=1)
@@ -28,10 +32,94 @@ class RouletteGUI:
         # Visualisation globale du jeu
         self.create_global_view_frame()
 
-        # Table de roulette
+        # ====== Repositionnement du tapis de jeu à droite ======
         self.table_frame = tk.Frame(self.master)
-        self.table_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+        self.table_frame.grid(row=3, column=1, columnspan=2, padx=10, pady=10)
         create_roulette_table(self.table_frame, self.enter_number)
+        # ======================================================
+
+        # ====== Ajout du compte à rebours et des boutons de réglage ======
+        timer_frame = tk.Frame(self.master)
+        timer_frame.grid(row=3, column=0, columnspan=1, padx=5, pady=5)  # Le positionner à gauche
+
+        self.timer_label = ttk.Label(timer_frame, text="00:00", font=("Arial", 16))
+        self.timer_label.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+
+        # Incrémenter/Décrémenter les minutes
+        ttk.Button(timer_frame, text="+ Min", command=self.increment_minutes).grid(row=1, column=0, padx=2, pady=2)
+        ttk.Button(timer_frame, text="- Min", command=self.decrement_minutes).grid(row=1, column=1, padx=2, pady=2)
+
+        # Incrémenter/Décrémenter les secondes
+        ttk.Button(timer_frame, text="+ Sec", command=self.increment_seconds).grid(row=2, column=0, padx=2, pady=2)
+        ttk.Button(timer_frame, text="- Sec", command=self.decrement_seconds).grid(row=2, column=1, padx=2, pady=2)
+
+        # Bouton pour démarrer le compte à rebours
+        start_button = ttk.Button(timer_frame, text="Démarrer le compte à rebours", command=self.start_timer)
+        start_button.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        # Bouton pour réinitialiser le compte à rebours
+        reset_button = ttk.Button(timer_frame, text="Réinitialiser le compte à rebours", command=self.reset_timer)
+        reset_button.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        # ======================================================
+
+    def increment_minutes(self):
+        """Incrémente les minutes de 1 minute."""
+        self.minutes += 1
+        self.update_timer_label()
+
+    def decrement_minutes(self):
+        """Décrémente les minutes de 1 minute si possible."""
+        if self.minutes > 0:
+            self.minutes -= 1
+        self.update_timer_label()
+
+    def increment_seconds(self):
+        """Incrémente les secondes de 10 secondes."""
+        if self.seconds < 50:  # Limiter à 59 secondes
+            self.seconds += 10
+        else:
+            self.seconds = 0
+            self.increment_minutes()  # Incrémenter les minutes si les secondes dépassent 59
+        self.update_timer_label()
+
+    def decrement_seconds(self):
+        """Décrémente les secondes de 10 secondes si possible."""
+        if self.seconds >= 10:
+            self.seconds -= 10
+        elif self.minutes > 0:  # Décrémenter les minutes si les secondes passent à 0
+            self.seconds = 50
+            self.decrement_minutes()
+        self.update_timer_label()
+
+    def update_timer_label(self):
+        """Met à jour l'affichage du label du compte à rebours."""
+        self.timer_label.config(text=f"{self.minutes:02}:{self.seconds:02}")
+
+    def start_timer(self):
+        """Démarre le compte à rebours avec les minutes et secondes définies."""
+        if not self.timer_running:
+            self.remaining_time = self.minutes * 60 + self.seconds
+            self.update_timer()
+            self.timer_running = True
+
+    def update_timer(self):
+        """Met à jour le label avec le temps restant toutes les secondes."""
+        if self.remaining_time > 0:
+            minutes, seconds = divmod(self.remaining_time, 60)
+            self.timer_label.config(text=f"{minutes:02}:{seconds:02}")
+            self.remaining_time -= 1
+            self.master.after(1000, self.update_timer)  # Mettre à jour toutes les secondes
+        else:
+            self.timer_label.config(text="00:00")
+            self.timer_running = False  # Compte à rebours terminé
+
+    def reset_timer(self):
+        """Réinitialise le compte à rebours à zéro et stoppe la mise à jour."""
+        self.remaining_time = 0
+        self.timer_label.config(text="00:00")
+        self.timer_running = False
+        self.minutes = 0
+        self.seconds = 0      
 
     def create_game_params_frame(self):
         frame = ttk.LabelFrame(self.master, text="Paramètres de jeu")
@@ -50,10 +138,10 @@ class RouletteGUI:
         self.sixain_number.set("1")
         self.sixain_number.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
 
-        ttk.Button(frame, text="Commencer", command=self.start_game).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
-        ttk.Button(frame, text="Réinitialiser", command=self.reset_game).grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+        ttk.Button(frame, text="Commencer", command=self.start_game).grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+        ttk.Button(frame, text="Réinitialiser", command=self.reset_game).grid(row=4, column=1, columnspan=2, padx=5, pady=5)
 
-        ttk.Checkbutton(frame, text="Afficher les popups", variable=self.show_popup).grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+        ttk.Checkbutton(frame, text="Afficher les popups", variable=self.show_popup).grid(row=4, column=0, columnspan=1, padx=5, pady=5)
 
     def create_info_text(self, parent):
         parent.grid_rowconfigure(0, weight=1)

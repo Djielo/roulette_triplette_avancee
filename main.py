@@ -9,7 +9,7 @@ def main():
     screen_height = root.winfo_screenheight()
     
     # Ajuster la fenêtre à 80% de la taille de l'écran
-    root.geometry(f"{int(screen_width * 0.6)}x{int(screen_height * 0.8)}")
+    root.geometry(f"{int(screen_width * 0.5)}x{int(screen_height * 0.7)}")
     
     # S'assurer que la fenêtre se redimensionne
     root.grid_rowconfigure(0, weight=1)
