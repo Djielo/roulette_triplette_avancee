@@ -77,6 +77,7 @@ class MultiSixainGameLogic:
         game = self.active_games[sixain]
         current_sixain = get_sixain(number)
         
+        # Calcul des gains
         sixain_win = game.sixain == current_sixain
         douzaine_win = game.douzaine == get_douzaine(number)
         colonne_win = game.colonne == get_colonne(number)
@@ -86,6 +87,9 @@ class MultiSixainGameLogic:
         gain_colonne = calculate_gain(False, False, colonne_win, game.last_bet)
         
         total_gain = gain_sixain + gain_douzaine + gain_colonne
+        mise_tour_actuel = game.last_bet * 3  # Mise totale sur le tour actuel
+        
+        # Mise à jour des gains et du capital
         previous_balance = game.balance
         game.update_gains(gain_sixain, gain_douzaine, gain_colonne)
         self.capital += total_gain
@@ -94,30 +98,31 @@ class MultiSixainGameLogic:
             f"Gain total : {arrondir(total_gain)}€\n" \
             f"Balance du sixain : {arrondir(game.balance)}€ ({game.get_status()})\n" \
             f"Nouveau capital : {arrondir(self.capital)}€\n"
-      
-        if game.balance < 0:
-            if game.balance > previous_balance:
-                # Gain qui réduit la perte
-                if game.current_coup > 1:
-                    game.previous_coup()
-                    info += f"Gain réduisant la perte sur S{sixain}. Retour au coup {game.current_coup}.\n"
-                else:
-                    info += f"Déjà au premier coup pour S{sixain}. On reste au coup {game.current_coup}.\n"
-            else:
-                # Perte qui augmente
-                game.next_coup()
-                info += f"Perte sur S{sixain}. Passage au coup {game.current_coup}.\n"
-        elif game.balance == 0:
-            info += f"Équilibre sur S{sixain}. On reste au coup {game.current_coup}.\n"
-        elif game.balance > 0 and not game.is_profitable():
-            if game.current_coup > 1:
-                game.previous_coup()
-                info += f"Gain mais pas encore bénéficiaire sur S{sixain}. Retour au coup {game.current_coup}.\n"
-            else:
-                info += f"Déjà au premier coup pour S{sixain}. On reste au coup {game.current_coup}.\n"
-        else:  # game.is_profitable()
+        
+        # Règle 4: Bénéfice réalisé - on arrête le jeu sur ce sixain
+        if game.balance > 0 and game.is_profitable():
             del self.active_games[sixain]
             info += f"Bénéfice réalisé pour S{sixain}. Fin du jeu sur ce sixain.\n"
+            return info
+            
+        # Règle 1: Pas de gain ou perte - on passe au coup suivant
+        if total_gain < mise_tour_actuel:
+            game.next_coup()
+            info += f"Perte sur S{sixain}. Passage au coup {game.current_coup}.\n"
+            return info
+            
+        # Règle 2: Gain égal aux mises du tour - on reste sur le même coup
+        if total_gain == mise_tour_actuel:
+            info += f"Équilibre sur S{sixain}. On reste au coup {game.current_coup}.\n"
+            return info
+            
+        # Règle 3: Gain supérieur aux mises du tour mais balance toujours négative
+        if total_gain > mise_tour_actuel and game.balance < 0:
+            if game.current_coup > 1:
+                game.previous_coup()
+                info += f"Gain réduisant la perte sur S{sixain}. Retour au coup {game.current_coup}.\n"
+            else:
+                info += f"Déjà au premier coup pour S{sixain}. On reste au coup {game.current_coup}.\n"
         
         return info
 
