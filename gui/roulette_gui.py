@@ -209,20 +209,31 @@ class RouletteGUI:
         ttk.Label(frame, text="Mises cumulées", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=5, pady=5)
         ttk.Label(frame, text="Historique des sorties", font=("Arial", 10, "bold")).grid(row=0, column=1, padx=5, pady=5)
 
-        # Création de la grille pour les mises cumulées
+        # Création de la grille pour les mises cumulées        
         mises_frame = ttk.Frame(frame)
         mises_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-
         self.mises_labels = {}
-        headers = ['S1:', 'S2:', 'S3:', 'S4:', 'S5:', 'S6:', 
-                   'D1:', 'D2:', 'D3:', 
-                   'C1:', 'C2:', 'C3:']
-        
+        headers = ['S1:', 'S2:', 'S3:', 'S4:', 'S5:', 'S6:',
+                'D1:', 'D2:', 'D3:',
+                'C1:', 'C2:', 'C3:']
+
+        # Configurer des lignes vides pour l'espacement
+        mises_frame.grid_rowconfigure(2, minsize=10)  # Espace entre sixains et douzaines
+        mises_frame.grid_rowconfigure(4, minsize=10)  # Espace entre douzaines et colonnes
+
         for i, header in enumerate(headers):
+            # Calculer la position réelle en tenant compte des lignes d'espacement
+            if i < 6:  # Sixains
+                row = i // 3
+            elif i < 9:  # Douzaines
+                row = (i // 3) + 1  # +1 pour l'espace après les sixains
+            else:  # Colonnes
+                row = (i // 3) + 2  # +2 pour les deux espaces
+
             label = tk.Label(mises_frame, text=header, relief="ridge", width=4)
-            label.grid(row=i//3, column=i%3*2, sticky="nsew", padx=1, pady=1)
+            label.grid(row=row, column=i%3*2, sticky="nsew", padx=1, pady=1)
             value_label = tk.Label(mises_frame, text="0.00€", relief="ridge", width=8)
-            value_label.grid(row=i//3, column=i%3*2+1, sticky="nsew", padx=1, pady=1)
+            value_label.grid(row=row, column=i%3*2+1, sticky="nsew", padx=1, pady=1)
             self.mises_labels[header] = value_label
 
         # Ajout de la section pour les coups par sixain
